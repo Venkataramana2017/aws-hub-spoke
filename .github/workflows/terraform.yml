@@ -1,0 +1,86 @@
+name: Terraform
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Terraform operation to run
+        required: true
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: terraform-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  branch-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a feature branch
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF_NAME}" != feature/* ]]; then
+            echo "This workflow may only run from a feature/<name> branch."
+            exit 1
+          fi
+
+  terraform:
+    # This workflow is deliberately manual, and is only intended for feature branches.
+    needs: branch-guard
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.command == 'plan' && 'terraform-plan' || 'terraform-changes' }}
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_INPUT: "false"
+      # Set these GitHub repository/environment variables before running the workflow.
+      TF_VAR_region: ${{ vars.AWS_REGION }}
+      TF_VAR_availability_zones: ${{ vars.TF_AVAILABILITY_ZONES }}
+
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials using OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.10.0"
+          terraform_wrapper: false
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive
+
+      - name: Initialize Terraform
+        run: terraform init -input=false
+
+      - name: Validate configuration
+        run: terraform validate
+
+      - name: Create plan
+        if: inputs.command == 'plan' || inputs.command == 'apply'
+        run: terraform plan -input=false -out=tfplan
+
+      - name: Apply plan
+        if: inputs.command == 'apply'
+        run: terraform apply -input=false -auto-approve tfplan
+
+      - name: Create destroy plan
+        if: inputs.command == 'destroy'
+        run: terraform plan -destroy -input=false -out=tfdestroy
+
+      - name: Destroy managed infrastructure
+        if: inputs.command == 'destroy'
+        run: terraform apply -input=false -auto-approve tfdestroy
