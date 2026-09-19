@@ -55,6 +55,16 @@ jobs:
       - name: Check out selected branch
         uses: actions/checkout@v4
 
+      - name: Verify AWS OIDC configuration
+        shell: bash
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [[ -z "${AWS_ROLE_ARN}" ]]; then
+            echo "AWS_ROLE_ARN is not available. Add it as a repository secret, or as a secret in the selected GitHub Environment."
+            exit 1
+          fi
+
       - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v6
         with:
