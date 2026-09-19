@@ -18,6 +18,11 @@ on:
           - plan
           - apply
           - destroy
+      debug_oidc:
+        description: Display non-sensitive GitHub OIDC claims for IAM trust-policy troubleshooting
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -64,6 +69,26 @@ jobs:
             echo "AWS_ROLE_ARN is not available. Add it as a repository secret, or as a secret in the selected GitHub Environment."
             exit 1
           fi
+
+      - name: Display OIDC claims for troubleshooting
+        if: inputs.debug_oidc
+        shell: bash
+        run: |
+          token_response=$(curl --fail-with-body --silent --show-error \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
+          token=$(jq --raw-output '.value' <<< "${token_response}")
+          OIDC_TOKEN="${token}" node <<'NODE'
+          const claims = JSON.parse(Buffer.from(process.env.OIDC_TOKEN.split(".")[1], "base64url"));
+          console.log(JSON.stringify({
+            sub: claims.sub,
+            aud: claims.aud,
+            ref: claims.ref,
+            repository: claims.repository,
+            repository_owner: claims.repository_owner,
+            environment: claims.environment,
+          }, null, 2));
+          NODE
 
       - name: Configure AWS credentials using OIDC
         uses: aws-actions/configure-aws-credentials@v6
