@@ -3,8 +3,10 @@ name: Terraform
 on:
   push:
     branches:
+      - "feature-*"
       - "feature/**"
       - "dev"
+      - "dev-*"
       - "dev/**"
   workflow_dispatch:
     inputs:
@@ -32,8 +34,8 @@ jobs:
       - name: Require a feature branch
         shell: bash
         run: |
-          if [[ "${GITHUB_REF_NAME}" != feature/* && "${GITHUB_REF_NAME}" != "dev" && "${GITHUB_REF_NAME}" != dev/* ]]; then
-            echo "This workflow may only run from feature/<name>, dev, or dev/<name> branches."
+          if [[ "${GITHUB_REF_NAME}" != feature-* && "${GITHUB_REF_NAME}" != feature/* && "${GITHUB_REF_NAME}" != "dev" && "${GITHUB_REF_NAME}" != dev-* && "${GITHUB_REF_NAME}" != dev/* ]]; then
+            echo "This workflow may only run from feature-*, feature/<name>, dev, dev-*, or dev/<name> branches."
             exit 1
           fi
 

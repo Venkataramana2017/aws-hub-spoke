@@ -33,9 +33,10 @@ terraform apply tfplan
 ## Manual GitHub Actions workflow
 
 `.github/workflows/terraform.yml` automatically runs `terraform plan` when a
-commit is pushed to `feature/<name>`, `dev`, or `dev/<name>`. It also provides a
-manual **Terraform** workflow for `plan`, `apply`, or `destroy`; `apply` and
-`destroy` require the `terraform-changes` environment. It uses AWS OIDC rather
+commit is pushed to `feature-*`, `feature/<name>`, `dev`, `dev-*`, or
+`dev/<name>`. It also provides a manual **Terraform** workflow for `plan`,
+`apply`, or `destroy`; `apply` and `destroy` require the `terraform-changes`
+environment. It uses AWS OIDC rather
 than long-lived AWS access keys and remote state so separate GitHub-hosted
 runners use the same state.
 
