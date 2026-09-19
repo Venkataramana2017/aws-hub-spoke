@@ -49,6 +49,10 @@ Before its first use, configure these GitHub repository or environment settings:
   GitHub Actions OIDC provider. Grant the role only the permissions needed for
   this Terraform configuration.
 
+The [`bootstrap`](bootstrap/README.md) stack creates the GitHub OIDC provider
+and trusted role. Apply it once with AWS administrator credentials, then save
+its `github_actions_role_arn` output as the `AWS_ROLE_ARN` secret.
+
 Create `terraform-plan` and `terraform-changes` GitHub Environments. Configure
 required reviewers on `terraform-changes` to require approval before `apply` or
 `destroy`; leave `terraform-plan` unprotected if plans should run immediately.
