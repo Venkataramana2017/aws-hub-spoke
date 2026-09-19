@@ -32,12 +32,16 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
     }
 
     # Jobs use environments, so GitHub issues environment-based OIDC subjects.
+    # GitHub repositories created after July 2026 use immutable owner/repository
+    # IDs in this claim; accept both the legacy and immutable formats.
     condition {
-      test     = "StringEquals"
+      test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
         "repo:${local.github_repository}:environment:terraform-plan",
         "repo:${local.github_repository}:environment:terraform-changes",
+        "repo:${var.github_organization}@*/${var.github_repository}@*:environment:terraform-plan",
+        "repo:${var.github_organization}@*/${var.github_repository}@*:environment:terraform-changes",
       ]
     }
 

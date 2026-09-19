@@ -26,5 +26,9 @@ secret. Attach a least-privilege permissions policy to the created role that
 allows Terraform to access the state bucket and manage the resources in the
 main stack.
 
+If the workflow already exists but OIDC is denied, run `terraform apply` here
+again after pulling the latest bootstrap changes, then update `AWS_ROLE_ARN`
+with the output value.
+
 The bootstrap stack uses local state. Keep its generated `terraform.tfstate`
 file secure and do not commit it.
