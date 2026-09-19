@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Display OIDC claims for troubleshooting
-        if: inputs.debug_oidc
+        if: github.event_name == 'push' || inputs.debug_oidc
         shell: bash
         run: |
           token_response=$(curl --fail-with-body --silent --show-error \
