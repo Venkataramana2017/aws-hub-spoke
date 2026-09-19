@@ -1,13 +1,13 @@
 variable "region" {
   type        = string
   description = "AWS Region for this landing-zone network."
-  default     = "eu-west-2"
+  default     = "us-east-1"
 }
 
 variable "availability_zones" {
   type        = list(string)
   description = "Two or more AZs in the selected Region."
-  default     = ["eu-west-2a", "eu-west-2b"]
+  default     = ["us-east-1a", "us-east-1b"]
 }
 
 variable "enable_nat_gateway" {

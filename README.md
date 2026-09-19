@@ -42,9 +42,9 @@ runners use the same state.
 
 Before its first use, configure these GitHub repository or environment settings:
 
-- Variable `AWS_REGION`, for example `eu-west-2`.
+- Variable `AWS_REGION`, for example `us-east-1`.
 - Variable `TF_AVAILABILITY_ZONES`, as a Terraform list, for example
-  `["eu-west-2a", "eu-west-2b"]`.
+  `["us-east-1a", "us-east-1b"]`.
 - Secret `AWS_ROLE_ARN`, the ARN of an AWS IAM role trusted by this repository's
   GitHub Actions OIDC provider. Grant the role only the permissions needed for
   this Terraform configuration.
