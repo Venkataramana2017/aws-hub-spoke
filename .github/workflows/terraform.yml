@@ -1,6 +1,11 @@
 name: Terraform
 
 on:
+  push:
+    branches:
+      - "feature/**"
+      - "dev"
+      - "dev/**"
   workflow_dispatch:
     inputs:
       command:
@@ -27,16 +32,16 @@ jobs:
       - name: Require a feature branch
         shell: bash
         run: |
-          if [[ "${GITHUB_REF_NAME}" != feature/* ]]; then
-            echo "This workflow may only run from a feature/<name> branch."
+          if [[ "${GITHUB_REF_NAME}" != feature/* && "${GITHUB_REF_NAME}" != "dev" && "${GITHUB_REF_NAME}" != dev/* ]]; then
+            echo "This workflow may only run from feature/<name>, dev, or dev/<name> branches."
             exit 1
           fi
 
   terraform:
-    # This workflow is deliberately manual, and is only intended for feature branches.
+    # Pushes create plans; apply and destroy are manual-only operations.
     needs: branch-guard
     runs-on: ubuntu-latest
-    environment: ${{ inputs.command == 'plan' && 'terraform-plan' || 'terraform-changes' }}
+    environment: ${{ (github.event_name == 'push' || inputs.command == 'plan') && 'terraform-plan' || 'terraform-changes' }}
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
@@ -70,7 +75,7 @@ jobs:
         run: terraform validate
 
       - name: Create plan
-        if: inputs.command == 'plan' || inputs.command == 'apply'
+        if: github.event_name == 'push' || inputs.command == 'plan' || inputs.command == 'apply'
         run: terraform plan -input=false -out=tfplan
 
       - name: Apply plan
