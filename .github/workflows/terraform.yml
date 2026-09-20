@@ -2,12 +2,6 @@ name: Terraform
 
 on:
   push:
-    branches:
-      - "feature-*"
-      - "feature/**"
-      - "dev"
-      - "dev-*"
-      - "dev/**"
   workflow_dispatch:
     inputs:
       command:
@@ -36,11 +30,11 @@ jobs:
   branch-guard:
     runs-on: ubuntu-latest
     steps:
-      - name: Require a feature branch
+      - name: Reject main and non-branch refs
         shell: bash
         run: |
-          if [[ "${GITHUB_REF_NAME}" != feature-* && "${GITHUB_REF_NAME}" != feature/* && "${GITHUB_REF_NAME}" != "dev" && "${GITHUB_REF_NAME}" != dev-* && "${GITHUB_REF_NAME}" != dev/* ]]; then
-            echo "This workflow may only run from feature-*, feature/<name>, dev, dev-*, or dev/<name> branches."
+          if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" == "main" ]]; then
+            echo "Terraform may run only from branches other than main."
             exit 1
           fi
 

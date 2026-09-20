@@ -31,37 +31,29 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:repository"
-      values   = [local.github_repository]
-    }
-
-    # Jobs use environments, so GitHub issues environment-based OIDC subjects.
-    # GitHub repositories created after July 2026 use immutable owner/repository
-    # IDs in this claim; accept both the legacy and immutable formats.
+    # Trust any repository owned by the configured GitHub owner. Environment
+    # jobs use environment subjects; jobs without an environment use ref subjects.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:${local.github_repository}:environment:terraform-plan",
-        "repo:${local.github_repository}:environment:terraform-changes",
-        "repo:${var.github_organization}@*/${var.github_repository}@*:environment:terraform-plan",
-        "repo:${var.github_organization}@*/${var.github_repository}@*:environment:terraform-changes",
+        "repo:${var.github_organization}/*:ref:refs/heads/*",
+        "repo:${var.github_organization}/*:environment:*",
+        "repo:${var.github_organization}@*/*@*:ref:refs/heads/*",
+        "repo:${var.github_organization}@*/*@*:environment:*",
       ]
     }
 
-    # Restrict both environments to the branches allowed by the workflow.
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:ref"
-      values = [
-        "refs/heads/feature-*",
-        "refs/heads/feature/*",
-        "refs/heads/dev",
-        "refs/heads/dev-*",
-        "refs/heads/dev/*",
-      ]
+      values   = ["refs/heads/*"]
+    }
+
+    condition {
+      test     = "StringNotLike"
+      variable = "token.actions.githubusercontent.com:ref"
+      values   = ["refs/heads/main"]
     }
   }
 }
