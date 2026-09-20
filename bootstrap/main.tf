@@ -31,6 +31,12 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:repository"
+      values   = [local.github_repository]
+    }
+
     # Jobs use environments, so GitHub issues environment-based OIDC subjects.
     # GitHub repositories created after July 2026 use immutable owner/repository
     # IDs in this claim; accept both the legacy and immutable formats.
