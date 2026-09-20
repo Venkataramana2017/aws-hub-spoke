@@ -17,10 +17,13 @@ on:
         required: false
         type: boolean
         default: false
+  issue_comment:
+    types: [created]
 
 permissions:
   contents: read
   id-token: write
+  pull-requests: read
 
 concurrency:
   group: terraform-${{ github.ref_name }}
@@ -28,21 +31,38 @@ concurrency:
 
 jobs:
   branch-guard:
+    if: >-
+      github.event_name != 'issue_comment' ||
+      github.event.issue.pull_request &&
+      (startsWith(github.event.comment.body, '/plan') ||
+      startsWith(github.event.comment.body, '/apply') ||
+      startsWith(github.event.comment.body, '/destroy'))
     runs-on: ubuntu-latest
     steps:
       - name: Reject main and non-branch refs
         shell: bash
         run: |
-          if [[ "${GITHUB_REF_TYPE}" != "branch" || "${GITHUB_REF_NAME}" == "main" ]]; then
+          if [[ "${GITHUB_EVENT_NAME}" == "issue_comment" ]]; then
+            target_ref="$(jq -r '.issue.pull_request.head.ref' "${GITHUB_EVENT_PATH}")"
+          else
+            target_ref="${GITHUB_REF_NAME}"
+          fi
+          if [[ -z "${target_ref}" || "${target_ref}" == "main" ]]; then
             echo "Terraform may run only from branches other than main."
             exit 1
           fi
 
   terraform:
-    # Pushes create plans; apply and destroy are manual-only operations.
+    # Pushes create plans; apply and destroy are manual-only operations or PR comments.
     needs: branch-guard
+    if: >-
+      github.event_name != 'issue_comment' ||
+      (github.event.issue.pull_request &&
+      (startsWith(github.event.comment.body, '/plan') ||
+      startsWith(github.event.comment.body, '/apply') ||
+      startsWith(github.event.comment.body, '/destroy')))
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'push' || inputs.command == 'plan') && 'terraform-plan' || 'terraform-changes' }}
+    environment: ${{ (github.event_name == 'push' || inputs.command == 'plan' || startsWith(github.event.comment.body, '/plan')) && 'terraform-plan' || 'terraform-changes' }}
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
@@ -53,6 +73,8 @@ jobs:
     steps:
       - name: Check out selected branch
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'issue_comment' && format('refs/pull/{0}/head', github.event.issue.number) || github.ref }}
 
       - name: Verify AWS OIDC configuration
         shell: bash
@@ -69,7 +91,7 @@ jobs:
           fi
 
       - name: Display OIDC claims for troubleshooting
-        if: github.event_name == 'push' || inputs.debug_oidc
+        if: github.event_name == 'push' || inputs.debug_oidc || startsWith(github.event.comment.body, '/')
         shell: bash
         run: |
           token_response=$(curl --fail-with-body --silent --show-error \
@@ -111,17 +133,17 @@ jobs:
         run: terraform validate
 
       - name: Create plan
-        if: github.event_name == 'push' || inputs.command == 'plan' || inputs.command == 'apply'
+        if: github.event_name == 'push' || inputs.command == 'plan' || inputs.command == 'apply' || startsWith(github.event.comment.body, '/plan') || startsWith(github.event.comment.body, '/apply')
         run: terraform plan -input=false -out=tfplan
 
       - name: Apply plan
-        if: inputs.command == 'apply'
+        if: inputs.command == 'apply' || startsWith(github.event.comment.body, '/apply')
         run: terraform apply -input=false -auto-approve tfplan
 
       - name: Create destroy plan
-        if: inputs.command == 'destroy'
+        if: inputs.command == 'destroy' || startsWith(github.event.comment.body, '/destroy')
         run: terraform plan -destroy -input=false -out=tfdestroy
 
       - name: Destroy managed infrastructure
-        if: inputs.command == 'destroy'
+        if: inputs.command == 'destroy' || startsWith(github.event.comment.body, '/destroy')
         run: terraform apply -input=false -auto-approve tfdestroy
