@@ -47,3 +47,4 @@ with the output value.
 
 The bootstrap stack uses local state. Keep its generated `terraform.tfstate`
 file secure and do not commit it.
+updated
