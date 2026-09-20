@@ -1,0 +1,9 @@
+region             = "us-east-1"
+availability_zones = ["us-east-1a", "us-east-1b"]
+enable_nat_gateway = false
+
+tags = {
+  Environment = "platform"
+  ManagedBy   = "Terraform"
+  Owner       = "cloud-team"
+}
