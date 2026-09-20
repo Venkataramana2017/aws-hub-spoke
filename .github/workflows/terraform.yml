@@ -63,6 +63,10 @@ jobs:
             echo "AWS_ROLE_ARN is not available. Add it as a repository secret, or as a secret in the selected GitHub Environment."
             exit 1
           fi
+          if [[ "${AWS_ROLE_ARN}" != arn:aws:iam::*:role/* ]]; then
+            echo "AWS_ROLE_ARN must contain the full IAM role ARN, for example arn:aws:iam::313932316713:role/github-actions-aws-hub-spoke-terraform."
+            exit 1
+          fi
 
       - name: Display OIDC claims for troubleshooting
         if: github.event_name == 'push' || inputs.debug_oidc
