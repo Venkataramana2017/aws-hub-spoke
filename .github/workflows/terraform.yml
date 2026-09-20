@@ -34,9 +34,9 @@ jobs:
     if: >-
       github.event_name != 'issue_comment' ||
       github.event.issue.pull_request &&
-      (startsWith(github.event.comment.body, '/plan') ||
-      startsWith(github.event.comment.body, '/apply') ||
-      startsWith(github.event.comment.body, '/destroy'))
+      (github.event.comment.body == '/plan' ||
+      github.event.comment.body == '/apply' ||
+      github.event.comment.body == '/destroy')
     runs-on: ubuntu-latest
     steps:
       - name: Reject main and non-branch refs
@@ -58,11 +58,11 @@ jobs:
     if: >-
       github.event_name != 'issue_comment' ||
       (github.event.issue.pull_request &&
-      (startsWith(github.event.comment.body, '/plan') ||
-      startsWith(github.event.comment.body, '/apply') ||
-      startsWith(github.event.comment.body, '/destroy')))
+      (github.event.comment.body == '/plan' ||
+      github.event.comment.body == '/apply' ||
+      github.event.comment.body == '/destroy'))
     runs-on: ubuntu-latest
-    environment: ${{ (github.event_name == 'push' || inputs.command == 'plan' || startsWith(github.event.comment.body, '/plan')) && 'terraform-plan' || 'terraform-changes' }}
+    environment: ${{ (github.event_name == 'push' || inputs.command == 'plan' || github.event.comment.body == '/plan') && 'terraform-plan' || 'terraform-changes' }}
     env:
       TF_IN_AUTOMATION: "true"
       TF_INPUT: "false"
@@ -91,7 +91,7 @@ jobs:
           fi
 
       - name: Display OIDC claims for troubleshooting
-        if: github.event_name == 'push' || inputs.debug_oidc || startsWith(github.event.comment.body, '/')
+        if: github.event_name == 'push' || inputs.debug_oidc || github.event.comment.body == '/plan' || github.event.comment.body == '/apply' || github.event.comment.body == '/destroy'
         shell: bash
         run: |
           token_response=$(curl --fail-with-body --silent --show-error \
@@ -133,17 +133,17 @@ jobs:
         run: terraform validate
 
       - name: Create plan
-        if: github.event_name == 'push' || inputs.command == 'plan' || inputs.command == 'apply' || startsWith(github.event.comment.body, '/plan') || startsWith(github.event.comment.body, '/apply')
+        if: github.event_name == 'push' || inputs.command == 'plan' || inputs.command == 'apply' || github.event.comment.body == '/plan' || github.event.comment.body == '/apply'
         run: terraform plan -input=false -out=tfplan
 
       - name: Apply plan
-        if: inputs.command == 'apply' || startsWith(github.event.comment.body, '/apply')
+        if: inputs.command == 'apply' || github.event.comment.body == '/apply'
         run: terraform apply -input=false -auto-approve tfplan
 
       - name: Create destroy plan
-        if: inputs.command == 'destroy' || startsWith(github.event.comment.body, '/destroy')
+        if: inputs.command == 'destroy' || github.event.comment.body == '/destroy'
         run: terraform plan -destroy -input=false -out=tfdestroy
 
       - name: Destroy managed infrastructure
-        if: inputs.command == 'destroy' || startsWith(github.event.comment.body, '/destroy')
+        if: inputs.command == 'destroy' || github.event.comment.body == '/destroy'
         run: terraform apply -input=false -auto-approve tfdestroy
