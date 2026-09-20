@@ -31,16 +31,39 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
-    # Trust any repository owned by the configured GitHub owner. Environment
-    # jobs use environment subjects; jobs without an environment use ref subjects.
+    # Environment jobs use environment subjects. The workflow branch guard
+    # rejects main before credentials are requested.
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values = [
+        "repo:${var.github_organization}/*:environment:*",
+        "repo:${var.github_organization}@*/*@*:environment:*",
+      ]
+    }
+  }
+
+  statement {
+    effect  = "Allow"
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+
+    principals {
+      type        = "Federated"
+      identifiers = [local.github_oidc_provider_arn]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
         "repo:${var.github_organization}/*:ref:refs/heads/*",
-        "repo:${var.github_organization}/*:environment:*",
         "repo:${var.github_organization}@*/*@*:ref:refs/heads/*",
-        "repo:${var.github_organization}@*/*@*:environment:*",
       ]
     }
 
