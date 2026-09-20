@@ -18,8 +18,8 @@ variable "github_repository" {
 
 variable "role_name" {
   type        = string
-  description = "Name for the GitHub Actions OIDC role."
-  default     = "github-actions-terraform"
+  description = "Name for the dedicated aws-hub-spoke GitHub Actions OIDC role."
+  default     = "github-actions-aws-hub-spoke-terraform"
 }
 
 variable "create_oidc_provider" {

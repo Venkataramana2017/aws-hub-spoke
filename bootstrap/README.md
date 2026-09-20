@@ -3,6 +3,8 @@
 This stack creates the GitHub OIDC provider and a role trusted by the
 repository's `terraform-plan` and `terraform-changes` environments. It allows
 only `feature-*`, `feature/<name>`, `dev`, `dev-*`, and `dev/<name>` branches.
+It creates a dedicated `github-actions-aws-hub-spoke-terraform` role and does
+not modify roles used by other repositories or pipelines.
 
 Run it once with administrator credentials in AWS account `313932316713`:
 
